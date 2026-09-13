@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#12131f"/>
+  <!-- corps clair -->
+  <rect x="2" y="11" width="28" height="10" fill="#e4e4e4" stroke="#0a0a0a" stroke-width="1"/>
+  <!-- fine bande grise du bas -->
+  <rect x="3" y="18" width="26" height="2" fill="#9a9a9a"/>
+  <!-- croix directionnelle (compacte) -->
+  <rect x="6" y="15" width="5" height="2" fill="#181818"/>
+  <rect x="7" y="13" width="2" height="6" fill="#181818"/>
+  <!-- Select / Start -->
+  <rect x="13" y="15" width="2" height="2" fill="#7d1a1a"/>
+  <rect x="16" y="15" width="2" height="2" fill="#7d1a1a"/>
+  <!-- boutons A / B -->
+  <rect x="21" y="14" width="3" height="3" fill="#d11f1f"/>
+  <rect x="25" y="14" width="3" height="3" fill="#d11f1f"/>
+</svg>

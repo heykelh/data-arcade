@@ -21,7 +21,7 @@ type Dict = {
 };
 
 const fr: Dict = {
-  ui: { credits: "▲ CRÉDITS 1", sound: "SON", home: "ARCADE" },
+  ui: { credits: "▲ CRÉDITS 1", music: "MUSIQUE", sfx: "SONS", home: "ARCADE" },
   hub: {
     insertCoin: "—— insère une pièce ——",
     chooseCabinet: "CHOISIS TA BORNE",
@@ -69,7 +69,7 @@ const fr: Dict = {
 };
 
 const en: Dict = {
-  ui: { credits: "▲ CREDITS 1", sound: "SOUND", home: "ARCADE" },
+  ui: { credits: "▲ CREDITS 1", music: "MUSIC", sfx: "SFX", home: "ARCADE" },
   hub: {
     insertCoin: "—— insert coin ——",
     chooseCabinet: "CHOOSE YOUR CABINET",
@@ -123,7 +123,7 @@ const I18nCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: Dict 
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>("fr");
+  const [lang, setLang] = useState<Lang>("en");
   return <I18nCtx.Provider value={{ lang, setLang, t: dict[lang] }}>{children}</I18nCtx.Provider>;
 }
 

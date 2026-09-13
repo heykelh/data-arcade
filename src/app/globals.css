@@ -42,3 +42,6 @@ body {
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #12131f; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+body { -webkit-text-size-adjust: 100%; }

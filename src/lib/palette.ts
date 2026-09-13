@@ -4,5 +4,7 @@ export const C = {
   green: "#4bd66c", red: "#f24e6b", yellow: "#ffcd75", blue: "#4aa8ff", purple: "#b478ff",
 } as const;
 
-// La police est auto-hébergée via next/font (voir layout.tsx) et exposée en variable CSS.
+// Police 8-bit pour titres & boutons
 export const PIX = "var(--font-press-start), ui-monospace, 'Courier New', monospace";
+// Police pixel plus lisible pour le texte courant (paragraphes)
+export const READ = "var(--font-vt323), ui-monospace, 'Courier New', monospace";

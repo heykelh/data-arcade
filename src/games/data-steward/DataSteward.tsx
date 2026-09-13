@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { C, PIX } from "@/lib/palette";
+import { C, PIX, READ } from "@/lib/palette";
 import { useI18n } from "@/lib/i18n";
 import { useSound } from "@/lib/sound";
 import Screen from "@/components/Screen";
@@ -220,10 +220,10 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 const S = {
-  p: { fontFamily: "ui-sans-serif, system-ui", fontSize: 13, lineHeight: 1.6, color: C.dim, textAlign: "center", margin: 0 } as const,
-  mono: { fontFamily: "ui-monospace, monospace", fontSize: 13 } as const,
-  hint: { fontFamily: "ui-sans-serif, system-ui", fontSize: 12, color: C.dim } as const,
+  p: { fontFamily: READ, fontSize: 18, lineHeight: 1.4, color: C.dim, textAlign: "center", margin: 0 } as const,
+  mono: { fontFamily: READ, fontSize: 18 } as const,
+  hint: { fontFamily: READ, fontSize: 17, color: C.dim } as const,
   primary: { fontFamily: PIX, fontSize: 11, color: C.bg, background: C.green, border: "none", padding: "12px 16px", cursor: "pointer" } as const,
   ghost: { fontFamily: PIX, fontSize: 9, color: C.dim, background: "transparent", border: `1px solid ${C.line}`, padding: "8px 10px", cursor: "pointer" } as const,
-  big: { flex: 1, fontFamily: PIX, fontSize: 12, background: C.bg, border: "2px solid", padding: "16px 8px", cursor: "pointer" } as const,
+  big: { flex: 1, fontFamily: PIX, fontSize: 12, background: C.bg, border: "2px solid", padding: "20px 8px", cursor: "pointer" } as const,
 };
