@@ -5,7 +5,7 @@ import type { Field } from "@/games/data-steward/records";
 export type Lang = "fr" | "en";
 
 type Dict = {
-  ui: { credits: string; sound: string; home: string };
+  ui: { credits: string; music: string; sfx: string; home: string };
   hub: { insertCoin: string; chooseCabinet: string; playable: string; soon: string; footer: string };
   genres: { steward: string; pipe: string; sql: string; quest: string };
   steward: {
@@ -119,7 +119,7 @@ const en: Dict = {
 const dict: Record<Lang, Dict> = { fr, en };
 
 const I18nCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: Dict }>({
-  lang: "fr", setLang: () => {}, t: fr,
+  lang: "en", setLang: () => {}, t: en,
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
