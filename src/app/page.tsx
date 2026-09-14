@@ -11,6 +11,8 @@ export default function Hub() {
   const { t } = useI18n();
   const { beep } = useSound();
   const [blink, setBlink] = useState(true);
+  const { setTrack } = useSound();
+  useEffect(() => { setTrack("/music.mp3"); }, [setTrack]);
 
   useEffect(() => {
     const id = setInterval(() => setBlink((b) => !b), 600);

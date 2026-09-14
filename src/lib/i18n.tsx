@@ -16,6 +16,15 @@ type Dict = {
     precision: string; fiches: string; replay: string; backCabinet: string; newRecord: string;
     fields: Record<Field, string>;
   };
+  sql: {
+    title: string; intro1: string; intro2: string; rules: string; insertCoin: string;
+    you: string; foe: string; combo: string; prompt: string;
+    qcm: string; type: string; submit: string; placeholder: string;
+    hit: string; miss: string; answer: string;
+    victory: string; defeat: string; slain: string; accuracy: string; best: string;
+    replay: string; backCabinet: string; newRecord: string;
+    enemies: Record<string, string>; menaces: Record<string, string>;
+  };
   reasons: Record<string, string>;
   grades: Record<string, string>;
 };
@@ -48,6 +57,35 @@ const fr: Dict = {
     precision: "PRÉCISION", fiches: "FICHES", replay: "REJOUER ►", backCabinet: "◄ BORNE",
     newRecord: "★ Nouveau record de session ★",
     fields: { nom: "Nom", email: "Email", tel: "Téléphone", naissance: "Naissance", iban: "IBAN", ville: "Ville" },
+  },
+  sql: {
+    title: "SQL FIGHTER",
+    intro1: "La mauvaise donnée a envahi l'entrepôt.",
+    intro2: "Une seule arme : la bonne clause SQL.",
+    rules: "Choisis la requête qui terrasse chaque menace. Mauvais choix, elle riposte.",
+    insertCoin: "INSÉRER UNE PIÈCE ►",
+    you: "TOI", foe: "ENNEMI", combo: "COMBO", prompt: "Quelle requête ?",
+    qcm: "◉ CHOIX", type: "⌨ SAISIE", submit: "LANCER ►", placeholder: "tape la clause…",
+    hit: "TOUCHÉ !", miss: "RATÉ !", answer: "Réponse :",
+    victory: "VICTOIRE", defeat: "GAME OVER", slain: "MENACES VAINCUES", accuracy: "PRÉCISION", best: "BEST",
+    replay: "REJOUER ►", backCabinet: "◄ BORNE", newRecord: "★ Nouveau record de session ★",
+    enemies: {
+      dupe: "Sire Duplicatout",
+      nullz: "NULLzilla, Dévoreur de Valeurs",
+      space: "Baron de l'Espace Sournois",
+      flood: "Capitaine Scan-Total",
+      legacy: "LEGACY-2003 : le Tableur Immortel",
+    },
+    menaces: {
+      dup: "Des lignes identiques se reproduisent. Le même client, cinq fois.",
+      nullz: "La moitié de la colonne email est… NULL. Le vide. Le néant.",
+      space: "'  Paris  ' ne matche pas 'Paris'. Des espaces sournois partout.",
+      flood: "La requête veut renvoyer 40 millions de lignes. Le serveur supplie.",
+      caseMix: "'Paris', 'PARIS', 'paris' — une ville, trois déguisements.",
+      ungrouped: "Il te faut une ligne par client, mais tu en as une par commande.",
+      baddate: "Les dates sont du texte : '2003-13-40'. Ce mois n'existe pas.",
+      orphan: "Des commandes pointent vers le client #999, jamais créé.",
+    },
   },
   reasons: {
     emailNoAt: "Email mal formaté (@ manquant)",
@@ -96,6 +134,35 @@ const en: Dict = {
     precision: "ACCURACY", fiches: "RECORDS", replay: "REPLAY ►", backCabinet: "◄ ARCADE",
     newRecord: "★ New session best ★",
     fields: { nom: "Name", email: "Email", tel: "Phone", naissance: "Birth date", iban: "IBAN", ville: "City" },
+  },
+  sql: {
+    title: "SQL FIGHTER",
+    intro1: "Bad data has invaded the warehouse.",
+    intro2: "One weapon: the right SQL clause.",
+    rules: "Pick the query that defeats each menace. Wrong call, it hits back.",
+    insertCoin: "INSERT COIN ►",
+    you: "YOU", foe: "FOE", combo: "COMBO", prompt: "Which query?",
+    qcm: "◉ CHOICES", type: "⌨ TYPE", submit: "CAST ►", placeholder: "type the clause…",
+    hit: "HIT!", miss: "MISS!", answer: "Answer:",
+    victory: "VICTORY", defeat: "GAME OVER", slain: "MENACES SLAIN", accuracy: "ACCURACY", best: "BEST",
+    replay: "REPLAY ►", backCabinet: "◄ ARCADE", newRecord: "★ New session best ★",
+    enemies: {
+      dupe: "Sir Duplicatesalot",
+      nullz: "NULLzilla, Devourer of Values",
+      space: "Baron von Trailing-Space",
+      flood: "Captain Full-Table-Scan",
+      legacy: "LEGACY-2003: The Undying Spreadsheet",
+    },
+    menaces: {
+      dup: "Identical rows are breeding in the table. Same customer, five times.",
+      nullz: "Half the email column is just… NULL. Void. Nothing.",
+      space: "'  Paris  ' won't match 'Paris'. Sneaky spaces everywhere.",
+      flood: "The query wants to return 40 million rows. The server begs for mercy.",
+      caseMix: "'Paris', 'PARIS', 'paris' — one city, three disguises.",
+      ungrouped: "You need one line per customer, but you've got one per order.",
+      baddate: "Birth dates are text: '2003-13-40'. That month doesn't exist.",
+      orphan: "Orders point to customer #999, who was never created.",
+    },
   },
   reasons: {
     emailNoAt: "Malformed email (missing @)",

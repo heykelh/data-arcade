@@ -2,47 +2,76 @@
 import { createContext, useContext, useRef, useState, useCallback, useEffect, ReactNode } from "react";
 
 type Notes = Array<[number, number]>;
+const DEFAULT_TRACK = "/music.mp3";
 
 const SoundCtx = createContext<{
   sfxOn: boolean; musicOn: boolean;
   toggleSfx: () => void; toggleMusic: () => void;
   beep: (n: Notes) => void;
-}>({ sfxOn: true, musicOn: true, toggleSfx: () => {}, toggleMusic: () => {}, beep: () => {} });
+  setTrack: (src: string) => void;
+}>({
+  sfxOn: true, musicOn: true, toggleSfx: () => {}, toggleMusic: () => {},
+  beep: () => {}, setTrack: () => {},
+});
 
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [sfxOn, setSfxOn] = useState(true);
   const [musicOn, setMusicOn] = useState(true);
   const ctxRef = useRef<AudioContext | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const trackRef = useRef<string>(DEFAULT_TRACK);
+  const musicOnRef = useRef(true);
+  useEffect(() => { musicOnRef.current = musicOn; }, [musicOn]);
 
-  // Prépare l'élément audio une seule fois
+  // Élément audio unique, créé une fois
   useEffect(() => {
-    const a = new Audio("/music.mp3");
-    a.loop = true;      // ← boucle infinie
-    a.volume = 0.4;     // ← volume (0 à 1), ajuste à ton goût
+    const a = new Audio(DEFAULT_TRACK);
+    a.loop = true;
+    a.volume = 0.4;
     audioRef.current = a;
     return () => { a.pause(); };
   }, []);
 
-  // Démarre / coupe la musique selon le bouton
+  // Change de piste avec un léger fondu ; ne coupe pas si c'est déjà la même
+  const setTrack = useCallback((src: string) => {
+    const a = audioRef.current;
+    if (!a || trackRef.current === src) return;
+    trackRef.current = src;
+    const swap = () => {
+      a.src = src;
+      a.load();
+      if (musicOnRef.current) a.play().catch(() => {});
+    };
+    if (a.paused) { swap(); return; }
+    // petit fondu sortant avant de changer
+    const from = a.volume;
+    let v = from;
+    const fade = setInterval(() => {
+      v -= from / 6;
+      if (v <= 0) { clearInterval(fade); a.volume = from; swap(); }
+      else a.volume = v;
+    }, 30);
+  }, []);
+
+  // Bouton musique on/off
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
-    if (musicOn) a.play().catch(() => { /* attend le 1er clic, voir note */ });
+    if (musicOn) a.play().catch(() => {});
     else a.pause();
   }, [musicOn]);
 
-  // Au tout premier clic sur la page, on (re)tente le play si musicOn
+  // Premier clic → débloque l'audio (politique navigateur)
   useEffect(() => {
     const kick = () => {
-      if (musicOn && audioRef.current) audioRef.current.play().catch(() => {});
+      if (musicOnRef.current && audioRef.current) audioRef.current.play().catch(() => {});
       window.removeEventListener("pointerdown", kick);
     };
     window.addEventListener("pointerdown", kick);
     return () => window.removeEventListener("pointerdown", kick);
-  }, [musicOn]);
+  }, []);
 
-  // Bruitages (inchangé)
+  // Bruitages
   const beep = useCallback((notes: Notes) => {
     if (!sfxOn) return;
     if (!ctxRef.current) {
@@ -71,7 +100,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       sfxOn, musicOn,
       toggleSfx: () => setSfxOn((v) => !v),
       toggleMusic: () => setMusicOn((v) => !v),
-      beep,
+      beep, setTrack,
     }}>
       {children}
     </SoundCtx.Provider>
