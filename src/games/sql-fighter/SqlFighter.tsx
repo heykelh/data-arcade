@@ -5,17 +5,24 @@ import { C, PIX, READ } from "@/lib/palette";
 import { useI18n } from "@/lib/i18n";
 import { useSound } from "@/lib/sound";
 import Screen from "@/components/Screen";
-import { ENEMIES, CLAUSES, CLAUSE_MATCH, MENACES, ClauseId, MenaceId } from "./enemies";
+import { ENEMIES, CHALLENGES, Challenge, QType, Loc } from "./enemies";
 
 const PLAYER_HP = 100;
 const shuffle = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
-const rnd = <T,>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
 
-type Feedback = { ok: boolean; answer: string } | null;
+const BADGE: Record<QType, Loc> = {
+  clause:    { fr: "◈ QUELLE CLAUSE ?", en: "◈ WHICH CLAUSE?" },
+  fixerror:  { fr: "✗ TROUVE LE BUG",   en: "✗ FIND THE BUG" },
+  fillblank: { fr: "▭ COMPLÈTE LE TROU", en: "▭ FILL THE BLANK" },
+  output:    { fr: "▶ QUE RENVOIE-T-ELLE ?", en: "▶ WHAT DOES IT RETURN?" },
+};
+
+type Feedback = { ok: boolean } | null;
 
 export default function SqlFighter() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { beep } = useSound();
+  const L = (x: Loc) => x[lang];
 
   const [phase, setPhase] = useState<"intro" | "fight" | "win" | "over">("intro");
   const [enemyIndex, setEnemyIndex] = useState(0);
@@ -26,25 +33,40 @@ export default function SqlFighter() {
   const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
   const [best, setBest] = useState(0);
-  const [menaceId, setMenaceId] = useState<MenaceId>("dup");
-  const [options, setOptions] = useState<ClauseId[]>([]);
+  const [ch, setCh] = useState<Challenge | null>(null);
+  const [opts, setOpts] = useState<Loc[]>([]);
+  const [correctIdx, setCorrectIdx] = useState(0);
   const [mode, setMode] = useState<"qcm" | "type">("qcm");
   const [typed, setTyped] = useState("");
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [hurtEnemy, setHurtEnemy] = useState(false);
   const [hurtPlayer, setHurtPlayer] = useState(false);
   const scoreRef = useRef(0);
+  const queueRef = useRef<string[]>([]);
+  const lastIdRef = useRef<string>("");
   useEffect(() => { scoreRef.current = score; }, [score]);
 
   const enemy = ENEMIES[enemyIndex];
-  const answerClause = MENACES[menaceId].answer;
+  const canType = !!ch?.match;
+  const effectiveMode: "qcm" | "type" = canType ? mode : "qcm";
 
-  const loadMenace = (e = enemy) => {
-    const mid = rnd(e.pool);
-    const correct = MENACES[mid].answer;
-    const others = (Object.keys(CLAUSES) as ClauseId[]).filter((c) => c !== correct);
-    setOptions(shuffle([correct, ...shuffle(others).slice(0, 3)]));
-    setMenaceId(mid);
+  const buildQueue = (e = enemy) =>
+    shuffle(CHALLENGES.filter((c) => e.levels.includes(c.level)).map((c) => c.id));
+
+  const loadChallenge = (e = enemy) => {
+    if (queueRef.current.length === 0) queueRef.current = buildQueue(e);
+    let id = queueRef.current.pop()!;
+    if (id === lastIdRef.current && queueRef.current.length > 0) {
+      queueRef.current.unshift(id);
+      id = queueRef.current.pop()!;
+    }
+    lastIdRef.current = id;
+    const c = CHALLENGES.find((x) => x.id === id)!;
+    const indexed = c.options.map((o, i) => ({ o, ok: i === c.answer }));
+    const sh = shuffle(indexed);
+    setCh(c);
+    setOpts(sh.map((x) => x.o));
+    setCorrectIdx(sh.findIndex((x) => x.ok));
     setTyped("");
     setFeedback(null);
   };
@@ -52,27 +74,29 @@ export default function SqlFighter() {
   const start = () => {
     setEnemyIndex(0); setEnemyHp(ENEMIES[0].hp); setPlayerHp(PLAYER_HP);
     setCombo(1); setScore(0); setHits(0); setMisses(0);
-    setPhase("fight"); loadMenace(ENEMIES[0]);
+    queueRef.current = buildQueue(ENEMIES[0]); lastIdRef.current = "";
+    setPhase("fight"); loadChallenge(ENEMIES[0]);
   };
 
   const matchesTyped = () => {
+    if (!ch?.match) return false;
     const norm = typed.toUpperCase().replace(/\s+/g, " ").trim();
-    return CLAUSE_MATCH[answerClause].every((tok) => norm.includes(tok));
+    return ch.match.every((tok) => norm.includes(tok));
   };
 
   const resolve = (ok: boolean) => {
-    if (feedback) return;
+    if (feedback || !ch) return;
     let newEnemyHp = enemyHp, newPlayerHp = playerHp;
     if (ok) {
       const dmg = Math.min(60, 28 + combo * 6);
       newEnemyHp = Math.max(0, enemyHp - dmg);
       setEnemyHp(newEnemyHp);
       setCombo((c) => Math.min(c + 1, 9));
-      setScore((s) => s + 100 * combo);
+      setScore((s) => s + 100 * combo * ch.level);
       setHits((h) => h + 1);
       setHurtEnemy(true);
       beep([[660, 0.06], [880, 0.09]]);
-      setFeedback({ ok: true, answer: CLAUSES[answerClause] });
+      setFeedback({ ok: true });
     } else {
       newPlayerHp = Math.max(0, playerHp - enemy.power);
       setPlayerHp(newPlayerHp);
@@ -80,31 +104,36 @@ export default function SqlFighter() {
       setMisses((m) => m + 1);
       setHurtPlayer(true);
       beep([[200, 0.16], [140, 0.14]]);
-      setFeedback({ ok: false, answer: CLAUSES[answerClause] });
+      setFeedback({ ok: false });
     }
     setTimeout(() => {
       setHurtEnemy(false); setHurtPlayer(false);
       if (newPlayerHp <= 0) { setBest((b) => Math.max(b, scoreRef.current)); setPhase("over"); }
       else if (newEnemyHp <= 0) {
         if (enemyIndex + 1 >= ENEMIES.length) { setBest((b) => Math.max(b, scoreRef.current)); setPhase("win"); }
-        else { const ni = enemyIndex + 1; setEnemyIndex(ni); setEnemyHp(ENEMIES[ni].hp); setCombo(1); loadMenace(ENEMIES[ni]); }
-      } else loadMenace(enemy);
-    }, 1150);
+        else {
+          const ni = enemyIndex + 1;
+          setEnemyIndex(ni); setEnemyHp(ENEMIES[ni].hp); setCombo(1);
+          queueRef.current = buildQueue(ENEMIES[ni]); lastIdRef.current = "";
+          loadChallenge(ENEMIES[ni]);
+        }
+      } else loadChallenge(enemy);
+    }, 1250);
   };
 
   // Clavier : 1-4 en QCM, Entrée pour démarrer/rejouer
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((phase === "intro" || phase === "win" || phase === "over") && (e.key === "Enter" || e.key === " ")) start();
-      else if (phase === "fight" && mode === "qcm" && !feedback) {
+      else if (phase === "fight" && effectiveMode === "qcm" && !feedback) {
         const n = parseInt(e.key, 10);
-        if (n >= 1 && n <= options.length) resolve(options[n - 1] === answerClause);
+        if (n >= 1 && n <= opts.length) resolve(n - 1 === correctIdx);
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, mode, feedback, options, answerClause, enemyHp, playerHp, combo, enemyIndex]);
+  }, [phase, effectiveMode, feedback, opts, correctIdx, enemyHp, playerHp, combo, enemyIndex, ch]);
 
   const acc = hits + misses ? Math.round((hits / (hits + misses)) * 100) : 0;
 
@@ -120,45 +149,47 @@ export default function SqlFighter() {
         </Screen>
       )}
 
-      {phase === "fight" && (
+      {phase === "fight" && ch && (
         <Screen>
-          {/* barre ennemi */}
           <div style={{ display: "flex", justifyContent: "space-between", fontFamily: PIX, fontSize: 9, marginBottom: 6 }}>
             <span style={{ color: enemy.boss ? C.red : C.ink }}>{enemy.boss ? "☠ " : ""}{t.sql.enemies[enemy.id]}</span>
-            <span style={{ color: C.dim }}>{t.sql.foe}</span>
+            <span style={{ color: C.dim }}>{"◆".repeat(ch.level)}</span>
           </div>
           <Bar pct={enemyHp / enemy.hp} color={enemy.color} />
 
-          {/* sprite */}
-          <div style={{ display: "flex", justifyContent: "center", margin: "14px 0",
-            animation: hurtEnemy ? "arcShake 260ms" : "none" }}>
+          <div style={{ display: "flex", justifyContent: "center", margin: "14px 0", animation: hurtEnemy ? "arcShake 260ms" : "none" }}>
             <EnemySprite id={enemy.id} color={enemy.color} boss={enemy.boss} />
           </div>
 
-          {/* menace */}
+          {/* énoncé */}
           <div style={{ background: C.bg, border: `2px solid ${C.line}`, padding: "12px 14px", marginBottom: 12 }}>
-            <div style={{ fontFamily: PIX, fontSize: 8, color: C.dim, marginBottom: 8 }}>⚠ {t.sql.prompt}</div>
-            <div style={{ fontFamily: READ, fontSize: 18, color: C.ink, lineHeight: 1.35 }}>{t.sql.menaces[menaceId]}</div>
+            <div style={{ fontFamily: PIX, fontSize: 8, color: C.purple, marginBottom: 8 }}>{L(BADGE[ch.type])}</div>
+            <div style={{ fontFamily: READ, fontSize: 18, color: C.ink, lineHeight: 1.35 }}>{L(ch.prompt)}</div>
+            {ch.code && (
+              <pre style={{ fontFamily: "ui-monospace, monospace", fontSize: 14, color: C.green, background: "#0c0d16",
+                border: `1px solid ${C.line}`, padding: "10px 12px", marginTop: 10, marginBottom: 0, whiteSpace: "pre-wrap", overflowX: "auto" }}>
+{ch.code}</pre>
+            )}
           </div>
 
-          {/* bascule mode */}
+          {/* bascule mode (saisie seulement si la question s'y prête) */}
           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <button onClick={() => setMode("qcm")} style={{ ...St.tab, ...(mode === "qcm" ? St.tabOn : {}) }}>{t.sql.qcm}</button>
-            <button onClick={() => setMode("type")} style={{ ...St.tab, ...(mode === "type" ? St.tabOn : {}) }}>{t.sql.type}</button>
+            <button onClick={() => setMode("qcm")} style={{ ...St.tab, ...(effectiveMode === "qcm" ? St.tabOn : {}) }}>{t.sql.qcm}</button>
+            <button onClick={() => canType && setMode("type")} disabled={!canType}
+              style={{ ...St.tab, ...(effectiveMode === "type" ? St.tabOn : {}), opacity: canType ? 1 : 0.35, cursor: canType ? "pointer" : "not-allowed" }}>
+              {t.sql.type}
+            </button>
           </div>
 
-          {/* attaque */}
-          {mode === "qcm" ? (
+          {effectiveMode === "qcm" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {options.map((c, i) => {
-                const reveal = feedback && c === answerClause;
-                const wrongPick = feedback && !feedback.ok && c === answerClause;
+              {opts.map((o, i) => {
+                const reveal = feedback && i === correctIdx;
                 return (
-                  <button key={c} onClick={() => resolve(c === answerClause)} disabled={!!feedback}
+                  <button key={i} onClick={() => resolve(i === correctIdx)} disabled={!!feedback}
                     style={{ ...St.opt, borderColor: reveal ? C.green : C.line, color: reveal ? C.green : C.ink,
                       opacity: feedback && !reveal ? 0.4 : 1 }}>
-                    <span style={{ color: C.dim, marginRight: 8 }}>{i + 1}.</span>{CLAUSES[c]}
-                    {wrongPick ? " ✓" : ""}
+                    <span style={{ color: C.dim, marginRight: 8 }}>{i + 1}.</span>{L(o)}{reveal ? " ✓" : ""}
                   </button>
                 );
               })}
@@ -168,30 +199,24 @@ export default function SqlFighter() {
               <input value={typed} onChange={(e) => setTyped(e.target.value)} disabled={!!feedback}
                 placeholder={t.sql.placeholder} spellCheck={false} autoCapitalize="off"
                 onKeyDown={(e) => { if (e.key === "Enter" && !feedback) resolve(matchesTyped()); }}
-                style={{ flex: 1, fontFamily: READ, fontSize: 18, background: C.bg, color: C.ink,
+                style={{ flex: 1, fontFamily: "ui-monospace, monospace", fontSize: 16, background: C.bg, color: C.ink,
                   border: `2px solid ${C.line}`, padding: "12px", outline: "none" }} />
-              <button onClick={() => resolve(matchesTyped())} disabled={!!feedback}
-                style={{ ...St.primary, background: C.purple }}>{t.sql.submit}</button>
+              <button onClick={() => resolve(matchesTyped())} disabled={!!feedback} style={{ ...St.primary, background: C.purple }}>{t.sql.submit}</button>
             </div>
           )}
 
-          {/* feedback */}
-          <div style={{ minHeight: 34, marginTop: 12, textAlign: "center" }}>
+          {/* feedback + explication */}
+          <div style={{ minHeight: 40, marginTop: 12, textAlign: "center" }}>
             {feedback && (
               <div>
                 <div style={{ fontFamily: PIX, fontSize: 12, color: feedback.ok ? C.green : C.red }}>
                   {feedback.ok ? t.sql.hit : t.sql.miss}
                 </div>
-                {!feedback.ok && (
-                  <div style={{ fontFamily: READ, fontSize: 16, color: C.dim, marginTop: 4 }}>
-                    {t.sql.answer} {feedback.answer}
-                  </div>
-                )}
+                <div style={{ fontFamily: READ, fontSize: 16, color: C.dim, marginTop: 5, lineHeight: 1.35 }}>{L(ch.explain)}</div>
               </div>
             )}
           </div>
 
-          {/* barre joueur */}
           <div style={{ display: "flex", justifyContent: "space-between", fontFamily: PIX, fontSize: 9, margin: "6px 0 6px" }}>
             <span style={{ color: C.green }}>{t.sql.you}</span>
             <span style={{ color: combo > 1 ? C.purple : C.dim }}>{t.sql.combo} x{combo}</span>
@@ -204,8 +229,7 @@ export default function SqlFighter() {
 
       {(phase === "win" || phase === "over") && (
         <Screen>
-          <div style={{ border: `2px solid ${phase === "win" ? C.green : C.red}`, padding: "20px 18px",
-            background: C.bg, boxShadow: `0 0 0 4px ${C.panel}` }}>
+          <div style={{ border: `2px solid ${phase === "win" ? C.green : C.red}`, padding: "20px 18px", background: C.bg, boxShadow: `0 0 0 4px ${C.panel}` }}>
             <div style={{ fontFamily: PIX, fontSize: 8, color: C.purple, textAlign: "center" }}>DATA ARCADE</div>
             <div style={{ fontFamily: PIX, fontSize: 10, color: C.dim, textAlign: "center", marginTop: 6 }}>{t.sql.title}</div>
             <div style={{ fontFamily: PIX, fontSize: 16, color: phase === "win" ? C.green : C.red, textAlign: "center", margin: "16px 0 6px" }}>
@@ -243,7 +267,6 @@ function EnemySprite({ id, color, boss }: { id: string; color: string; boss?: bo
   const P = { imageRendering: "pixelated" as const };
   const eye = C.bg, glint = C.ink;
 
-  // Sire Duplicatout — l'original + son clone décalé
   if (id === "dupe") {
     return (
       <svg viewBox="0 0 32 32" width={s} height={s} shapeRendering="crispEdges" style={P}>
@@ -256,8 +279,6 @@ function EnemySprite({ id, color, boss }: { id: string; color: string; boss?: bo
       </svg>
     );
   }
-
-  // NULLzilla — reptile à dents, "NULL" sur le ventre
   if (id === "nullz") {
     return (
       <svg viewBox="0 0 32 32" width={s} height={s} shapeRendering="crispEdges" style={P}>
@@ -266,17 +287,13 @@ function EnemySprite({ id, color, boss }: { id: string; color: string; boss?: bo
         <rect x="6" y="11" width="2" height="7" fill={color} /><rect x="24" y="11" width="2" height="7" fill={color} />
         <rect x="10" y="10" width="4" height="4" fill={eye} /><rect x="18" y="10" width="4" height="4" fill={eye} />
         <rect x="11" y="11" width="2" height="2" fill={C.red} /><rect x="19" y="11" width="2" height="2" fill={C.red} />
-        {/* dents */}
         <rect x="9" y="16" width="14" height="2" fill={C.bg} />
         <rect x="10" y="18" width="2" height="2" fill={C.ink} /><rect x="14" y="18" width="2" height="2" fill={C.ink} /><rect x="18" y="18" width="2" height="2" fill={C.ink} />
-        {/* NULL sur le ventre */}
         <rect x="9" y="21" width="14" height="5" fill={C.bg} />
         <text x="16" y="25" textAnchor="middle" fontSize="4" fill={color} fontFamily="monospace" fontWeight="bold">NULL</text>
       </svg>
     );
   }
-
-  // Baron de l'Espace Sournois — fantôme cerné d'espaces vides [ ]
   if (id === "space") {
     return (
       <svg viewBox="0 0 32 32" width={s} height={s} shapeRendering="crispEdges" style={P}>
@@ -284,18 +301,14 @@ function EnemySprite({ id, color, boss }: { id: string; color: string; boss?: bo
         <rect x="4" y="22" width="3" height="3" fill={color} opacity="0.5" /><rect x="25" y="22" width="3" height="3" fill={color} opacity="0.5" />
         <rect x="10" y="7" width="12" height="14" fill={color} />
         <rect x="9" y="10" width="1" height="11" fill={color} /><rect x="22" y="10" width="1" height="11" fill={color} />
-        {/* base ondulée de fantôme */}
         <rect x="10" y="21" width="2" height="3" fill={color} /><rect x="14" y="21" width="2" height="3" fill={color} />
         <rect x="18" y="21" width="2" height="3" fill={color} /><rect x="20" y="21" width="2" height="3" fill={color} />
         <rect x="12" y="11" width="3" height="3" fill={eye} /><rect x="17" y="11" width="3" height="3" fill={eye} />
-        {/* crochets d'espace */}
         <rect x="6" y="14" width="2" height="6" fill={C.dim} /><rect x="6" y="14" width="4" height="1" fill={C.dim} /><rect x="6" y="19" width="4" height="1" fill={C.dim} />
         <rect x="24" y="14" width="2" height="6" fill={C.dim} /><rect x="22" y="14" width="4" height="1" fill={C.dim} /><rect x="22" y="19" width="4" height="1" fill={C.dim} />
       </svg>
     );
   }
-
-  // Capitaine Scan-Total — rack serveur qui déborde + loupe
   if (id === "flood") {
     return (
       <svg viewBox="0 0 32 32" width={s} height={s} shapeRendering="crispEdges" style={P}>
@@ -304,35 +317,25 @@ function EnemySprite({ id, color, boss }: { id: string; color: string; boss?: bo
         <rect x="9" y="13" width="14" height="2" fill={C.bg} /><rect x="9" y="16" width="14" height="2" fill={C.bg} />
         <rect x="9" y="19" width="14" height="2" fill={C.bg} /><rect x="9" y="22" width="14" height="2" fill={C.bg} />
         <rect x="20" y="7" width="2" height="2" fill={C.green} /><rect x="20" y="13" width="2" height="2" fill={C.red} />
-        {/* loupe qui scanne */}
         <rect x="17" y="15" width="7" height="7" fill="none" stroke={C.yellow} strokeWidth="1.5" />
         <rect x="23" y="21" width="4" height="2" fill={C.yellow} transform="rotate(45 25 22)" />
       </svg>
     );
   }
-
-  // LEGACY-2003 — vieux moniteur/tableur immortel, couronné
   if (id === "legacy") {
     return (
       <svg viewBox="0 0 32 32" width={s} height={s} shapeRendering="crispEdges" style={P}>
-        {/* couronne */}
         <rect x="8" y="1" width="2" height="4" fill={C.yellow} /><rect x="15" y="0" width="2" height="5" fill={C.yellow} /><rect x="22" y="1" width="2" height="4" fill={C.yellow} />
         <rect x="8" y="4" width="16" height="2" fill={C.yellow} />
-        {/* écran cathodique */}
         <rect x="4" y="6" width="24" height="18" fill="#c8c8c8" />
         <rect x="6" y="8" width="20" height="12" fill="#1c3a2a" />
-        {/* grille de cellules (tableur) */}
         <rect x="6" y="11" width="20" height="1" fill={C.green} /><rect x="6" y="14" width="20" height="1" fill={C.green} /><rect x="6" y="17" width="20" height="1" fill={C.green} />
         <rect x="12" y="8" width="1" height="12" fill={C.green} /><rect x="19" y="8" width="1" height="12" fill={C.green} />
-        {/* yeux rouges menaçants dans deux cellules */}
         <rect x="8" y="9" width="3" height="2" fill={C.red} /><rect x="21" y="9" width="3" height="2" fill={C.red} />
-        {/* pied du moniteur */}
         <rect x="12" y="24" width="8" height="2" fill="#9a9a9a" /><rect x="9" y="26" width="14" height="2" fill="#7a7a7a" />
       </svg>
     );
   }
-
-  // secours
   return (
     <svg viewBox="0 0 32 32" width={s} height={s} shapeRendering="crispEdges" style={P}>
       <rect x="8" y="8" width="16" height="14" fill={color} />
@@ -340,17 +343,6 @@ function EnemySprite({ id, color, boss }: { id: string; color: string; boss?: bo
     </svg>
   );
 }
-
-const St = {
-  p: { fontFamily: READ, fontSize: 18, lineHeight: 1.4, color: C.dim, textAlign: "center", margin: 0 } as const,
-  primary: { fontFamily: PIX, fontSize: 11, color: C.bg, border: "none", padding: "12px 16px", cursor: "pointer" } as const,
-  ghost: { fontFamily: PIX, fontSize: 9, color: C.dim, background: "transparent", border: `1px solid ${C.line}`, padding: "8px 10px", cursor: "pointer" } as const,
-  opt: { fontFamily: READ, fontSize: 18, textAlign: "left", background: C.bg, border: "2px solid", padding: "12px 14px", cursor: "pointer" } as const,
-  // border décomposé en 3 propriétés → plus de conflit shorthand avec borderColor
-  tab: { flex: 1, fontFamily: PIX, fontSize: 8, color: C.dim, background: "transparent",
-    borderWidth: 1, borderStyle: "solid", borderColor: C.line, padding: "8px", cursor: "pointer" } as const,
-  tabOn: { color: C.ink, borderColor: C.purple } as const,
-};
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
@@ -361,4 +353,11 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-
+const St = {
+  p: { fontFamily: READ, fontSize: 18, lineHeight: 1.4, color: C.dim, textAlign: "center", margin: 0 } as const,
+  primary: { fontFamily: PIX, fontSize: 11, color: C.bg, border: "none", padding: "12px 16px", cursor: "pointer" } as const,
+  ghost: { fontFamily: PIX, fontSize: 9, color: C.dim, background: "transparent", border: `1px solid ${C.line}`, padding: "8px 10px", cursor: "pointer" } as const,
+  opt: { fontFamily: READ, fontSize: 18, textAlign: "left", background: C.bg, borderWidth: 2, borderStyle: "solid", padding: "12px 14px", cursor: "pointer" } as const,
+  tab: { flex: 1, fontFamily: PIX, fontSize: 8, color: C.dim, background: "transparent", borderWidth: 1, borderStyle: "solid", borderColor: C.line, padding: "8px", cursor: "pointer" } as const,
+  tabOn: { color: C.ink, borderColor: C.purple } as const,
+};

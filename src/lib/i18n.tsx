@@ -15,6 +15,13 @@ type Dict = {
     conforme: string; rejete: string; good: string; missed: string; tooSlow: string;
     precision: string; fiches: string; replay: string; backCabinet: string; newRecord: string;
     fields: Record<Field, string>;
+    boss: {
+      alert: string; rgpdName: string; batchName: string; doppelName: string;
+      rgpdPrompt: string; batchPrompt: string; doppelPrompt: string;
+      validate: string; reject: string; rgpd: string; submit: string;
+      sensitiveLabel: string; cleared: string; failed: string; bonus: string; batchHint: string;
+      sensitiveSamples: string[];
+    };
   };
   sql: {
     title: string; intro1: string; intro2: string; rules: string; insertCoin: string;
@@ -57,6 +64,26 @@ const fr: Dict = {
     precision: "PRÉCISION", fiches: "FICHES", replay: "REJOUER ►", backCabinet: "◄ BORNE",
     newRecord: "★ Nouveau record de session ★",
     fields: { nom: "Nom", email: "Email", tel: "Téléphone", naissance: "Naissance", iban: "IBAN", ville: "Ville" },
+    boss: {
+      alert: "⚠ BOSS",
+      rgpdName: "L'INSPECTEUR RGPD",
+      batchName: "LE BATCH LEGACY 2003",
+      doppelName: "LE DOPPELGÄNGER",
+      rgpdPrompt: "Donnée sensible = non-conforme. Sinon, valide ou rejette normalement.",
+      batchPrompt: "5 fiches d'un coup. Garde les propres, rejette les sales. Vite !",
+      doppelPrompt: "Deux fiches, un seul doublon valable. Garde la plus complète.",
+      validate: "✓ VALIDER", reject: "✗ REJETER", rgpd: "⚠ RGPD", submit: "VALIDER LE LOT ►",
+      sensitiveLabel: "Donnée sensible",
+      cleared: "BOSS VAINCU !", failed: "BOSS RATÉ", bonus: "+1 vie",
+      batchHint: "Marque chaque fiche, puis valide le lot.",
+      sensitiveSamples: [
+        "N° Sécu : 1 85 12 78 123 456",
+        "Santé : traitement diabète type 2",
+        "Origine ethnique : renseignée",
+        "N° carte : 4970 1234 5678 9012",
+        "Opinion politique : renseignée",
+      ],
+    },
   },
   sql: {
     title: "SQL FIGHTER",
@@ -134,6 +161,26 @@ const en: Dict = {
     precision: "ACCURACY", fiches: "RECORDS", replay: "REPLAY ►", backCabinet: "◄ ARCADE",
     newRecord: "★ New session best ★",
     fields: { nom: "Name", email: "Email", tel: "Phone", naissance: "Birth date", iban: "IBAN", ville: "City" },
+    boss: {
+      alert: "⚠ BOSS",
+      rgpdName: "THE GDPR INSPECTOR",
+      batchName: "THE 2003 LEGACY BATCH",
+      doppelName: "THE DOPPELGÄNGER",
+      rgpdPrompt: "Sensitive data = non-compliant. Otherwise validate or reject as usual.",
+      batchPrompt: "5 records at once. Keep the clean ones, reject the dirty. Fast!",
+      doppelPrompt: "Two records, one valid duplicate. Keep the more complete one.",
+      validate: "✓ VALIDATE", reject: "✗ REJECT", rgpd: "⚠ GDPR", submit: "SUBMIT BATCH ►",
+      sensitiveLabel: "Sensitive data",
+      cleared: "BOSS DOWN!", failed: "BOSS SURVIVED", bonus: "+1 life",
+      batchHint: "Mark each record, then submit the batch.",
+      sensitiveSamples: [
+        "SSN: 078-05-1120",
+        "Health: type 2 diabetes treatment",
+        "Ethnic origin: recorded",
+        "Card no.: 4970 1234 5678 9012",
+        "Political opinion: recorded",
+      ],
+    },
   },
   sql: {
     title: "SQL FIGHTER",
