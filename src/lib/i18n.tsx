@@ -32,6 +32,13 @@ type Dict = {
     replay: string; backCabinet: string; newRecord: string;
     enemies: Record<string, string>; menaces: Record<string, string>;
   };
+  pipe: {
+    title: string; intro1: string; intro2: string; rules: string; insertCoin: string;
+    level: string; moves: string; time: string; score: string; best: string; cleared: string;
+    newLevel: string; solved: string; timeUp: string;
+    replay: string; backCabinet: string; newRecord: string;
+    bronze: string; gold: string; clean: string; needClean: string;
+  };
   reasons: Record<string, string>;
   grades: Record<string, string>;
 };
@@ -113,6 +120,17 @@ const fr: Dict = {
       baddate: "Les dates sont du texte : '2003-13-40'. Ce mois n'existe pas.",
       orphan: "Des commandes pointent vers le client #999, jamais créé.",
     },
+  },
+  pipe: {
+    title: "PIPE PLUMBER",
+    intro1: "La donnée brute part du Bronze et doit atteindre le Gold.",
+    intro2: "Fais pivoter les tuyaux pour tracer le pipeline.",
+    rules: "Clique un tuyau pour le tourner. Dès le niveau 3, la donnée doit passer par le nœud CLEAN avant le Gold. Chaque pipeline résolu rajoute du temps.",
+    insertCoin: "INSÉRER UNE PIÈCE ►",
+    level: "NIVEAU", moves: "COUPS", time: "TEMPS", score: "SCORE", best: "BEST", cleared: "PIPELINES",
+    newLevel: "NOUVEAU", solved: "FLUX ÉTABLI !", timeUp: "TEMPS ÉCOULÉ",
+    replay: "REJOUER ►", backCabinet: "◄ BORNE", newRecord: "★ Nouveau record de session ★",
+    bronze: "BRONZE", gold: "GOLD", clean: "CLEAN", needClean: "La donnée doit passer par CLEAN !",
   },
   reasons: {
     emailNoAt: "Email mal formaté (@ manquant)",
@@ -210,6 +228,17 @@ const en: Dict = {
       baddate: "Birth dates are text: '2003-13-40'. That month doesn't exist.",
       orphan: "Orders point to customer #999, who was never created.",
     },
+  },
+  pipe: {
+    title: "PIPE PLUMBER",
+    intro1: "Raw data starts at Bronze and must reach Gold.",
+    intro2: "Rotate the pipes to route the pipeline.",
+    rules: "Tap a pipe to rotate it. From level 3, data must pass through the CLEAN node before Gold. Each pipeline solved adds time.",
+    insertCoin: "INSERT COIN ►",
+    level: "LEVEL", moves: "MOVES", time: "TIME", score: "SCORE", best: "BEST", cleared: "PIPELINES",
+    newLevel: "NEW", solved: "FLOW ESTABLISHED!", timeUp: "TIME UP",
+    replay: "REPLAY ►", backCabinet: "◄ ARCADE", newRecord: "★ New session best ★",
+    bronze: "BRONZE", gold: "GOLD", clean: "CLEAN", needClean: "Data must pass through CLEAN!",
   },
   reasons: {
     emailNoAt: "Malformed email (missing @)",
